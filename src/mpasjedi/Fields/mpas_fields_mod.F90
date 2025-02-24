@@ -37,7 +37,7 @@ use mpas_dmpar, only : mpas_dmpar_exch_halo_field, mpas_dmpar_exch_halo_adj_fiel
 use mpas_constants_mod
 use mpas_geom_mod
 use mpas4da_mod
-use mpas2ufo_vars_mod, only: w_to_q, theta_to_temp
+use mpas2ufo_vars_mod, only: w_to_q, theta_to_temp, unstagger_vertical_velocity
 use mpas_kinds, only : c_real_type
 
 implicit none
@@ -397,6 +397,7 @@ subroutine read_fields(self, f_conf, vdate)
    logical :: Model2AnalysisVariableChange
    type (mpas_pool_type), pointer :: state, diag, mesh
    type (field2DReal), pointer    :: pressure, pressure_base, pressure_p
+   integer                 :: nVertLevels
 
    call fckit_log%debug('--> read_fields')
    if (f_conf%get("date", str)) then
@@ -470,7 +471,12 @@ subroutine read_fields(self, f_conf, vdate)
       pressure%array(:,1:ngrid) = pressure_base%array(:,1:ngrid) + pressure_p%array(:,1:ngrid)
 
       !(2) copy all to subFields & diagnose temperature
-      call update_diagnostic_fields(self % geom, self % subFields, self % geom % nCellsSolve)
+      if ( self % has('upward_air_velocity') )then
+         nVertLevels = self % geom % nVertLevels
+         call update_diagnostic_fields(self % geom, self % subFields, self % geom % nCellsSolve, nVertLevels)
+      else
+         call update_diagnostic_fields(self % geom, self % subFields, self % geom % nCellsSolve)
+      end if
    else
       call da_copy_all2sub_fields(self % geom, self % subFields)
    endif
@@ -478,13 +484,15 @@ subroutine read_fields(self, f_conf, vdate)
 end subroutine read_fields
 
 
-subroutine update_diagnostic_fields(geom, subFields, ngrid)
+subroutine update_diagnostic_fields(geom, subFields, ngrid, nVL)
 
    implicit none
    type (mpas_geom),      pointer,  intent(in)    :: geom
    type (mpas_pool_type), pointer,  intent(inout) :: subFields
    integer,                         intent(in)    :: ngrid
+   integer, optional,               intent(in)    :: nVL
    type (field2DReal), pointer    :: theta, pressure, temperature, specific_humidity
+   type (field2DReal), pointer    :: vertical_velocity_unstagger, vertical_velocity, dbztest
    type (field3DReal), pointer    :: scalars
    type (mpas_pool_type), pointer :: state
    integer, pointer :: index_qv
@@ -505,11 +513,20 @@ subroutine update_diagnostic_fields(geom, subFields, ngrid)
    call mpas_pool_get_field(geom % domain % blocklist % allFields, 'scalars', scalars)
    call mpas_pool_get_field(subFields, 'water_vapor_mixing_ratio_wrt_moist_air', specific_humidity)
 
+   call mpas_pool_get_field(geom % domain % blocklist % allFields, 'w', vertical_velocity)
+   call mpas_pool_get_field(subFields, 'upward_air_velocity', vertical_velocity_unstagger)
+
    call mpas_pool_get_subpool(geom % domain % blocklist % structs,'state',state)
    call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
    call theta_to_temp(theta % array(:,1:ngrid), pressure % array(:,1:ngrid), temperature % array(:,1:ngrid))
    call w_to_q( scalars % array(index_qv,:,1:ngrid) , specific_humidity % array(:,1:ngrid) )
+   if (present(nVL)) then
+      call unstagger_vertical_velocity( vertical_velocity % array(1:nVL+1, 1:ngrid), &
+                                        vertical_velocity_unstagger % array(1:nVL,1:ngrid), ngrid, nVL)
+   end if
+   ! Only accept background refl10cm no lower than 0 dBZ
+   call da_posdef( subFields, ['equivalent_reflectivity_factor'])
 
 end subroutine update_diagnostic_fields
 

@@ -48,7 +48,8 @@ private
 ! public variable conversions
 ! model2analysis
 public :: theta_to_temp, &
-          w_to_q
+          w_to_q, &
+          unstagger_vertical_velocity
 
 ! analysis2model
 public :: hydrostatic_balance
@@ -303,6 +304,16 @@ end subroutine theta_to_temp
 !   rho = pressure / ( rgas * temperature * &
 !                                ( MPAS_JEDI_ONE_kr + (rv/rgas) * mixing_ratio ) )
 !end subroutine twp_to_rho
+!-------------------------------------------------------------------------------------------
+
+subroutine unstagger_vertical_velocity(w, wa, nC, nV)
+   implicit none
+   real (kind=RKIND), dimension(nV+1,nC), intent(in) :: w
+   real (kind=RKIND), dimension(nV,nC), intent(out)  :: wa
+   integer, intent(in) :: nC, nV
+
+   wa(:,1:nC) = MPAS_JEDI_HALF_kr * ( w(1:nV,1:nC) + w(2:nV+1,1:nC) )
+end subroutine unstagger_vertical_velocity
 !-------------------------------------------------------------------------------------------
 subroutine pressure_half_to_full(pressure, zgrid, surface_pressure, nC, nV, pressure_f)
    implicit none

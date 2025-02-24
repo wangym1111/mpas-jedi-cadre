@@ -76,6 +76,7 @@ subroutine add_incr(self, increment)
    real(kind=RKIND), dimension(:,:), pointer :: ptrr2_qv, ptrr2_sh
    real(kind=RKIND), dimension(:,:), pointer :: ptrr2_p, ptrr2_rho, ptrr2_t, ptrr2_th, ptrr2_pp
    real(kind=RKIND), dimension(:,:), pointer :: ptrr2_dp, ptrr2_drho, ptrr2_dt, ptrr2_dth, ptrr2_dsh
+   real(kind=RKIND), dimension(:,:), pointer :: ptrr2_w, ptrr2_wa
    real(kind=RKIND), dimension(:), pointer :: ptrr1_ps, ptrr1_dps
 
    ! Difference with self_add other is that self%subFields can contain extra fields
@@ -159,7 +160,7 @@ subroutine add_incr(self, increment)
       ! note: nonlinear change of variable
       call da_posdef( self%subFields, mpas_hydrometeor_fields)
       call da_posdef( self%subFields, moistureFields)
-
+      call da_posdef( self%subFields, ['equivalent_reflectivity_factor'])
 
       ! Update qv (water vapor mixing ratio) from spechum (specific humidity) [ w = q / (1 - q) ]
       ! note: nonlinear change of variable
@@ -202,6 +203,20 @@ subroutine add_incr(self, increment)
 
          ! TODO: DO we need HALO exchange here or in ModelMPAS::initialize for model integration?
          call mpas_deallocate_field( fld2d_u_inc )
+      endif
+
+         ! Update vertical velocity from upward_air_velocity
+         ! note: linear change of variable
+       if ( self%has('w') .and. &
+         increment%has('upward_air_velocity') .and. &
+         .not.increment%has('w')  )then
+         call self%get('upward_air_velocity', ptrr2_wa)
+         call self%get('w',                   ptrr2_w )
+         do k = 1, self%geom%nVertLevels
+            ! Increment at unstagger grid is added to stagger grid directly
+            ! x_a(i) - 0.5*[ x(i) + x(i+1) ] + x(i)
+            ptrr2_w(k,:) = ptrr2_wa(k,:) - MPAS_JEDI_HALF_kr * (ptrr2_w(k+1,:) - ptrr2_w(k,:))
+         end do   
       endif
    else
       call abor1_ftn("mpas_state:add_incr: dimension mismatch")
