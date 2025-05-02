@@ -64,6 +64,8 @@ cost function:
           drivers:
             multivariate strategy: duplicated
             read local nicas: true
+          model:
+            level for 2d variables: last
     members:
     - filename: Data/480km/bg/ensemble/mem01/x1.2562.init.2018-04-15_00.00.00.nc
       <<: *memberConfig
@@ -86,7 +88,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/os/obsout_3denvar_2stream_bumploc_unst_sondes.nc4
+            obsfile: Data/os/obsout_3denvar_2stream_bumploc_sondes.nc4
         simulated variables: [airTemperature, windEastward, windNorthward, specificHumidity]
       obs operator:
         name: VertInterp
@@ -108,7 +110,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/os/obsout_3denvar_2stream_bumploc_unst_satwind.nc4
+            obsfile: Data/os/obsout_3denvar_2stream_bumploc_satwind.nc4
         simulated variables: [windEastward, windNorthward]
       obs operator:
         name: VertInterp
@@ -130,7 +132,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/os/obsout_3denvar_2stream_bumploc_unst_gnssroref.nc4
+            obsfile: Data/os/obsout_3denvar_2stream_bumploc_gnssroref.nc4
         simulated variables: [atmosphericRefractivity]
       obs operator:
         name: GnssroRefNCEP
@@ -169,7 +171,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/os/obsout_3denvar_2stream_bumploc_unst_sfc.nc4
+            obsfile: Data/os/obsout_3denvar_2stream_bumploc_sfc.nc4
         simulated variables: [stationPressure]
       obs operator:
         name: SfcPCorrected
