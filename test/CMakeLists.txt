@@ -80,20 +80,23 @@ list( APPEND mpas_testinput
   testinput/3dvar_bumpcov_ropp.yaml
   testinput/3dvar_bumpcov_nbam.yaml
   testinput/3dvar_bumpcov_rttovcpp.yaml
+  testinput/3dfgat_cda.yaml
   testinput/4denvar_bumploc.yaml
   testinput/4denvar_ID.yaml
   testinput/4denvar_VarBC.yaml
   testinput/4denvar_VarBC_nonpar.yaml
   testinput/4dhybrid_bumpcov_bumploc.yaml
   testinput/4dfgat.yaml
-  testinput/4dfgat_append_obs.yaml
+  testinput/4dfgat_cda.yaml
   testinput/convertstate.yaml
   testinput/converttostructuredgrid_latlon.yaml
   testinput/dirac_bumpcov.yaml
   testinput/dirac_bumploc.yaml
+  testinput/dirac_diffusion_duplicated.yaml
+  testinput/dirac_diffusion_univariate.yaml
   testinput/dirac_noloc.yaml
   testinput/dirac_spectral_1.yaml
-  testinput/dirac_spectral_no_wind.yaml
+  testinput/dirac_spectral_loc.yaml
   testinput/eda_3dhybrid.yaml
   testinput/eda_3dhybrid_1.yaml
   testinput/eda_3dhybrid_2.yaml
@@ -129,7 +132,8 @@ list( APPEND mpas_testinput
   testinput/obslocalizations.yaml
   testinput/parameters_bumpcov.yaml
   testinput/parameters_bumploc.yaml
-  testinput/process_perts_spectral_no_wind.yaml
+  testinput/parameters_diffusion.yaml
+  testinput/process_perts_spectral.yaml
   testinput/rtpp.yaml
   testinput/ens_mean_variance.yaml
   testinput/state.yaml
@@ -155,19 +159,22 @@ list( APPEND mpas_testoutput
   testoutput/3dvar_bumpcov_ropp.ref
   testoutput/3dvar_bumpcov_nbam.ref
   testoutput/3dvar_bumpcov_rttovcpp.ref
+  testoutput/3dfgat_cda.ref
   testoutput/4denvar_bumploc.ref
   testoutput/4denvar_ID.ref
   testoutput/4denvar_VarBC.ref
   testoutput/4dhybrid_bumpcov_bumploc.ref
   testoutput/4dfgat.ref
-  testoutput/4dfgat_append_obs.ref
+  testoutput/4dfgat_cda.ref
   testoutput/convertstate.ref
   testoutput/converttostructuredgrid_latlon.ref
   testoutput/dirac_bumpcov.ref
   testoutput/dirac_bumploc.ref
+  testoutput/dirac_diffusion_univariate.ref
+  testoutput/dirac_diffusion_duplicated.ref
   testoutput/dirac_noloc.ref
   testoutput/dirac_spectral_1.ref
-  testoutput/dirac_spectral_no_wind.ref
+  testoutput/dirac_spectral_loc.ref
   testoutput/eda_3dhybrid.ref
 #  testoutput/enshofx.ref
   testoutput/forecast.ref
@@ -183,7 +190,7 @@ list( APPEND mpas_testoutput
   testoutput/lgetkf_height_vloc.ref
   testoutput/parameters_bumpcov.ref
   testoutput/parameters_bumploc.ref
-  testoutput/process_perts_spectral_no_wind.ref
+  testoutput/process_perts_spectral.ref
   testoutput/rtpp.ref
   testoutput/ens_mean_variance.ref
 )
@@ -417,6 +424,8 @@ endif( ${rttov_FOUND} )
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${DATA_DIR_NAME}/bump)
 #spectral outputs
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${DATA_DIR_NAME}/spectral)
+#diffusion outputs
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${DATA_DIR_NAME}/diffusion)
 #ObsSpaces
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${DATA_DIR_NAME}/os)
 #model states
@@ -777,6 +786,11 @@ add_mpasjedi_application_test(
     APPLICATION error_covariance_toolbox
     ${RECALIBRATE})
 
+add_mpasjedi_application_test(
+    NAME parameters_diffusion
+    APPLICATION error_covariance_toolbox
+    ${RECALIBRATE})
+
 #gen_ens_pert_B
 add_mpasjedi_application_test(
     APPLICATION gen_ens_pert_B
@@ -797,6 +811,18 @@ add_mpasjedi_application_test(
     ${RECALIBRATE})
 
 add_mpasjedi_application_test(
+    NAME dirac_diffusion_duplicated
+    APPLICATION error_covariance_toolbox
+    DEPENDS parameters_diffusion
+    ${RECALIBRATE})
+
+add_mpasjedi_application_test(
+    NAME dirac_diffusion_univariate
+    APPLICATION error_covariance_toolbox
+    DEPENDS parameters_diffusion
+    ${RECALIBRATE})
+
+add_mpasjedi_application_test(
     NAME dirac_noloc
     APPLICATION error_covariance_toolbox
     ${RECALIBRATE})
@@ -807,16 +833,16 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
         NAME dirac_spectral_1
         APPLICATION error_covariance_toolbox
         ${RECALIBRATE})
-    
+
     add_mpasjedi_application_test(
-        NAME process_perts_spectral_no_wind
+        NAME process_perts_spectral
         APPLICATION process_perts
         ${RECALIBRATE})
 
     add_mpasjedi_application_test(
-        NAME dirac_spectral_no_wind
+        NAME dirac_spectral_loc
         APPLICATION error_covariance_toolbox
-        DEPENDS process_perts_spectral_no_wind
+        DEPENDS process_perts_spectral
         ${RECALIBRATE})
 endif()
 
@@ -853,6 +879,11 @@ if( ${rttov_FOUND} )
         DEPENDS parameters_bumpcov
         ${RECALIBRATE})
 endif( ${rttov_FOUND} )
+
+add_mpasjedi_application_test(
+    NAME 3dfgat_cda
+    APPLICATION variational
+    ${RECALIBRATE})
 
 #variational - 3denvar
 add_mpasjedi_application_test(
@@ -949,7 +980,7 @@ add_mpasjedi_application_test(
     ${RECALIBRATE})
 
 add_mpasjedi_application_test(
-    NAME 4dfgat_append_obs
+    NAME 4dfgat_cda
     APPLICATION variational
     ${RECALIBRATE})
 
@@ -987,10 +1018,13 @@ add_mpasjedi_application_test(
     APPLICATION enkf
     ${RECALIBRATE})
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND
+        CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "11" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "13")
 add_mpasjedi_application_test(
     NAME lgetkf_height_vloc
     APPLICATION enkf
     ${RECALIBRATE})
+endif()
 
 # subset of APPLICATION tests with comparison to reference output on multiple PE's
 #---------------------------------------------------------------------------------

@@ -1258,7 +1258,6 @@ subroutine push_back_other_fields(self, key, other)
   call self%push_back(key, other%subFields, key)
 end subroutine push_back_other_fields
 
-
 subroutine to_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_lev)
 
    implicit none
@@ -1292,7 +1291,6 @@ subroutine to_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_lev)
    else
       nx=geom%nCellsSolve
    endif
-
    do jvar = 1,vars%nvars()
       var_found = .false.
       call mpas_pool_begin_iteration(self%subFields)
@@ -1369,9 +1367,6 @@ subroutine to_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_lev)
                call abor1_ftn('poolItr % dataType .NE. real OR integer, unexpected')
             endif
 
-            ! Release pointer
-            call afield%final()
-
             ! Set flag
             var_found = .true.
             exit
@@ -1379,6 +1374,8 @@ subroutine to_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_lev)
       end do      ! mpas_pool_get_next_member
       if (.not.var_found) call abor1_ftn('variable '//trim(vars%variable(jvar))//' not found in increment')
    end do         ! do jvar=1, vars%nvars()
+   call afield%final()
+   call meta%final()
 end subroutine to_fieldset
 
 
@@ -1458,9 +1455,6 @@ subroutine from_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_le
                call abor1_ftn('poolItr % dataType neither real nor integer')
             endif
 
-            ! Release pointer
-            call afield%final()
-
             ! Set flag
             var_found = .true.
             exit
@@ -1468,6 +1462,7 @@ subroutine from_fieldset(self, geom, vars, afieldset, include_halo, flip_vert_le
       end do
       if (.not.var_found) call abor1_ftn('variable '//trim(vars%variable(jvar))//' not found in increment')
    end do
+   call afield%final()
 end subroutine from_fieldset
 
 ! ------------------------------------------------------------------------------

@@ -16,6 +16,7 @@ import netCDF4 as nc4
 import config as conf
 import var_utils as vu
 import JediDB
+import re
 
 '''
 Directory Structure for ctest:
@@ -65,6 +66,7 @@ def readdata():
   makeDistributionPlots = True
   plot_allinOneDistri = True   # plot profileObsTypes (includes all levels) and sfcObsTypes.
   plot_eachLevelDistri = False # plot every level separately for profileObsTypes.
+  plot_predictorDistri = False  # Default is False; should turn on it with makeDistributionPlots = True
 
   # NOUTER: number of outer iterations
   # can be set as env variable 'NOUTER'
@@ -86,24 +88,41 @@ def readdata():
   radianceObsTypes = [
     'abi_g16',
     'ahi_himawari8',
+    'abi-clr_g16',
+    'ahi-clr_himawari8',
     'amsua_aqua',
     'amsua_metop-a',
     'amsua_metop-b',
+    'amsua_metop-c',
     'amsua_n15',
     'amsua_n18',
     'amsua_n19',
-    'amsua_n19--hydro',
-    'amsua_n19--nohydro',
     'amsua-cld_aqua',
     'amsua-cld_metop-a',
     'amsua-cld_metop-b',
+    'amsua-cld_metop-c',
     'amsua-cld_n15',
     'amsua-cld_n18',
     'amsua-cld_n19',
     'mhs_metop-a',
     'mhs_metop-b',
+    'mhs_metop-c',
     'mhs_n19',
     'mhs_n18',
+    'mhs-cld_metop-a',
+    'mhs-cld_metop-b',
+    'mhs-cld_metop-c',
+    'mhs-cld_n19',
+    'mhs-cld_n18',
+    'atms_npp',
+    'atms_n20',
+    'atms_n21',
+    'iasi_metop-a',
+    'iasi_metop-b',
+    'iasi_metop-c',
+    'cris-fsr_npp',
+    'cris-fsr_n20',
+    'cris-fsr_n21',
   ]
 
   analyzedObsTypeGroups = []
@@ -238,12 +257,19 @@ def readdata():
     # assume hofx at first, then check for presence of 'ombgGroup'
     applicationType = hofxApp
     ncVarList = []
+    preds = {}
     for group in ncDB.groups:
+      match = re.search(r'Predictor$', group)
+      if match:
+         preds[group] = match
       if group == ApplicationObsGroups[variationalApp]['ombgGroup']:
         applicationType = variationalApp
       for var in ncDB.groups[group].variables:
         ncVarList+= [group+'/'+var]
 
+    predGroup = []
+    for group, match in preds.items():
+      predGroup+= {group}
     ncDB.close()
 
     obsGroup = ApplicationObsGroups[applicationType].get('obsGroup', None)
@@ -329,6 +355,14 @@ def readdata():
         hofx = hofxGroup+'/'+varName
         obsVars += [hofx]
 
+      # Add Predictor group:
+      pred = None
+      predVars = []
+      if predGroup is not None:
+        for group in predGroup:
+          pred =  group +'/'+varName
+          predVars.append(pred)
+          obsVars += [pred]
       # generate list of required variables to read
       readVars = coordVars + obsVars
 
@@ -450,6 +484,8 @@ def readdata():
       if isGNSSRO:
         db[omb] = (db[omb]/db[obs])*100.
         db[oma] = (db[oma]/db[obs])*100.
+        db[errstart] = (db[errstart]/db[obs])*100.
+        db[obserror] = (db[obserror]/db[obs])*100.
 
       # plot oma, omb from all vertical levels
       if makeDistributionPlots and plot_allinOneDistri:
@@ -646,6 +682,13 @@ def readdata():
             basic_plot_functions.plotDistri(db[latitude], db[longitude], db[ana][:,ich],
                                         obstype, shortname, units, expt_obs, 0, "ana",
                                         None, None, dotsize, color)
+            if plot_predictorDistri:
+              print('plotting predictors distribution for : '+obstype+ 'ch'+str(channel))
+              for ipred, pred in enumerate(predVars):
+                basic_plot_functions.plotDistri(db[latitude], db[longitude], db[pred][:,ich],
+                                        obstype, predGroup[ipred], "ch"+str(channel),
+                                        expt_obs, 0, "ch"+str(channel),
+                                        None, None, dotsize, color)
             dmin = -30
             dmax = 30
             color = "hsv"
@@ -737,13 +780,13 @@ def ploterrpro(xVals1, xLabel1,
   ax1.set_ylim([min(yVals), max(yVals)])
   ax1.set_ylabel(yLabel, fontsize=15)
   if 'Channel' in yLabel:
-      ax1.set_yticks(yVals)
-      ax1.set_yticklabels(yVals_in)
+    ax1.set_yticks(yVals)
+    ax1.set_yticklabels(yVals_in)
+  varUnits = '('+vu.varDictObs[varName][0]+')'
   if 'gnssro' in EXP_NAME:
-    varUnits = '(unitless)'
+    ax1.set_xlabel(varName+' '+metric+'(σ_o/y) '+varUnits, fontsize=15)
   else:
-    varUnits = '('+vu.varDictObs[varName][0]+')'
-  ax1.set_xlabel(varName+' '+metric+'(σ_o) '+varUnits, fontsize=15)
+    ax1.set_xlabel(varName+' '+metric+'(σ_o) '+varUnits, fontsize=15)
 
   ax2 = ax1.twinx()
   ax2.spines['right'].set_position(('axes', 1.0))

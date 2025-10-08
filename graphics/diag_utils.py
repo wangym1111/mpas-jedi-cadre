@@ -9,6 +9,7 @@ import pandas as pd
 import plot_utils as pu
 import stat_utils as su
 import var_utils as vu
+import modelsp_utils as mu
 
 _logger = logging.getLogger(__name__)
 
@@ -520,7 +521,7 @@ class ModelSpaceConsistencyRatio(DerivedDiagnostic):
           self.label += r','+stateType
         self.label += r'}$'
 
-        self.mmref = 'mmgfsan'
+        self.mmref = f'mm{mu.REF_KEY}an'
         self.sigmam = 'sigmax'+stateType
 
         self.requiredDiagnostics = [self.mmref, self.sigmam]
@@ -973,6 +974,8 @@ ensspread_ = EnsembleSpread('f')
 obserror_ = ObsError('f')
 totalspread_ = TotalSpread('f')
 
+ref_latex = mu.REF_KEY.upper()
+
 availableDiagnostics = {
     'bc': {
         'variable': BiasCorrection,
@@ -1009,21 +1012,21 @@ availableDiagnostics = {
         'variable': AnalysisMinusBackground,
         'label': r'$A-B$',
     },
-    'mmgfsan': {
+    f'mm{mu.REF_KEY}an': {
         'offline': True,
-        'label': r'$\delta{x_{GFSa}}$',
+        'label': r'$\delta{x_{' + ref_latex + 'a}}$',
         'selectedStatistics': ['Mean', 'RMS', 'STD'],
     },
-    'rltv_mmgfsan': {
+    f'rltv_mm{mu.REF_KEY}an': {
         'offline': True,
         'analyze': False,
-        'label': r'$\frac{\delta{x_{GFSa}}}{x_{GFSa}}$',
+        'label': r'$\frac{\delta{x_{' + ref_latex + 'a}}}{x_{' + ref_latex + 'a}}$',
         'selectedStatistics': ['Mean', 'RMS', 'STD'],
     },
-    'log_mogfsan': {
+    f'log_mo{mu.REF_KEY}an': {
         'offline': True,
         'analyze': False,
-        'label': r'$\log{\frac{x}{x_{GFSa}}}$',
+        'label': r'$\log{\frac{x}{x_{' + ref_latex + 'a}}}$',
         'selectedStatistics': ['Mean', 'RMS', 'STD'],
     },
     #NOTE: a failure results when 'analyze' is True under sigmax*, any one of the experiments
@@ -1211,30 +1214,30 @@ availableDiagnostics = {
     'SCI-'+bu.OkamotoMethod: {
         'variable': bu.SCIOkamoto,
         'analyze': False,
-        'onlyDiagSpaces': ['abi_g16', 'ahi_himawari8'],
+        'onlyDiagSpaces': ['abi_g16', 'abi_g18', 'ahi_himawari8', 'ahi_himawari9'],
         'selectedStatistics': ['Mean', 'STD'],
     },
     'ACI-'+bu.MZ19Method: {
         'variable': bu.ACIMZ19,
         'analyze': False,
-        'onlyDiagSpaces': ['abi_g16', 'ahi_himawari8'],
+        'onlyDiagSpaces': ['abi_g16', 'abi_g18', 'ahi_himawari8', 'ahi_himawari9'],
         'selectedStatistics': ['Mean', 'STD'],
     },
     'MCI': {
         'variable': bu.MCI,
         'analyze': False,
-        'onlyDiagSpaces': ['abi_g16', 'ahi_himawari8'],
+        'onlyDiagSpaces': ['abi_g16', 'abi_g18', 'ahi_himawari8', 'ahi_himawari9'],
         'selectedStatistics': ['Mean', 'STD'],
     },
     'CFy': {
         'variable': vu.cldfracMeta,
         'analyze': False,
-        'onlyDiagSpaces': ['abi_g16', 'ahi_himawari8'],
+        'onlyDiagSpaces': ['abi_g16', 'abi_g18', 'ahi_himawari8', 'ahi_himawari9'],
         'selectedStatistics': ['Mean', 'STD'],
     },
     'ABEILambda': {
         'variable': bu.ABEILambda,
-        'onlyDiagSpaces': ['abi_g16', 'ahi_himawari8'],
+        'onlyDiagSpaces': ['abi_g16', 'abi_g18', 'ahi_himawari8', 'ahi_himawari9'],
         'label': r'$\lambda_{ABEI}$',
     },
 # DerivedDiagnostics
